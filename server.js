@@ -18,11 +18,28 @@ async function ensureRepo () {
 	await exec('git clone https://github.com/nodejs/io.js.git repo')
 }
 
+let update
+async function updateRepo () {
+	// Share an update promise between requests
+	if ( ! update) {
+		update = exec('git fetch', {
+			cwd: 'repo'
+		})
+	}
+
+	// Clean up shared update promise when done current update
+	let res = await update
+	delete update
+	return res
+}
+
 //
 // Generate requested docs
 //
 async function ensureDocs (hash) {
 	if (await fs.exists(`public/${hash}`)) return
+
+	await updateRepo()
 
 	// Create a temporary copy of the repo for this specific hash or tag
 	let path = `tmp/${hash}`
